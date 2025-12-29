@@ -1,13 +1,5 @@
 import { NextResponse } from 'next/server';
 import { AccessToken, type AccessTokenOptions, type VideoGrant } from 'livekit-server-sdk';
-import { RoomConfiguration } from '@livekit/protocol';
-
-type ConnectionDetails = {
-  serverUrl: string;
-  roomName: string;
-  participantName: string;
-  participantToken: string;
-};
 
 const API_KEY = process.env.LIVEKIT_API_KEY;
 const API_SECRET = process.env.LIVEKIT_API_SECRET;
@@ -17,66 +9,39 @@ export const revalidate = 0;
 
 export async function POST(req: Request) {
   try {
-    if (LIVEKIT_URL === undefined) throw new Error('LIVEKIT_URL is not defined');
-    if (API_KEY === undefined) throw new Error('LIVEKIT_API_KEY is not defined');
-    if (API_SECRET === undefined) throw new Error('LIVEKIT_API_SECRET is not defined');
-
-    const body = await req.json();
+    const { searchParams } = new URL(req.url);
+    // URL'den gelen ?room=... parametresini yakala
+    const roomFromQuery = searchParams.get('room');
     
-    // --- KRİTİK DEĞİŞİKLİK BURADA ---
-    // Eğer istekten bir roomName gelmişse onu kullan, yoksa rastgele üret.
-    const roomName = body.roomName || `voice_assistant_room_${Math.floor(Math.random() * 10_000)}`;
-    const agentName: string = body?.room_config?.agents?.[0]?.agent_name;
+    let body = {};
+    try { body = await req.json(); } catch (e) { /* body boş olabilir */ }
 
-    const participantName = 'user';
-    const participantIdentity = `voice_assistant_user_${Math.floor(Math.random() * 10_000)}`;
-
-    const participantToken = await createParticipantToken(
-      { identity: participantIdentity, name: participantName },
-      roomName,
-      agentName
-    );
-
-    const data: ConnectionDetails = {
-      serverUrl: LIVEKIT_URL,
-      roomName,
-      participantToken: participantToken,
-      participantName,
-    };
+    // ÖNCE URL'deki odaya bak, yoksa body'deki odaya bak, o da yoksa rastgele üret
+    const roomName = roomFromQuery || (body as any)?.roomName || `voice_assistant_room_${Math.floor(Math.random() * 10_000)}`;
     
-    const headers = new Headers({ 'Cache-Control': 'no-store' });
-    return NextResponse.json(data, { headers });
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(error);
-      return new NextResponse(error.message, { status: 500 });
-    }
-  }
-}
+    const participantIdentity = `user_${Math.floor(Math.random() * 10_000)}`;
 
-function createParticipantToken(
-  userInfo: AccessTokenOptions,
-  roomName: string,
-  agentName?: string
-): Promise<string> {
-  const at = new AccessToken(API_KEY, API_SECRET, {
-    ...userInfo,
-    ttl: '15m',
-  });
-  const grant: VideoGrant = {
-    room: roomName,
-    roomJoin: true,
-    canPublish: true,
-    canPublishData: true,
-    canSubscribe: true,
-  };
-  at.addGrant(grant);
-
-  if (agentName) {
-    at.roomConfig = new RoomConfiguration({
-      agents: [{ agentName }],
+    const at = new AccessToken(API_KEY, API_SECRET, {
+      identity: participantIdentity,
+      name: 'user',
+      ttl: '15m',
     });
-  }
 
-  return at.toJwt();
+    at.addGrant({
+      room: roomName,
+      roomJoin: true,
+      canPublish: true,
+      canSubscribe: true,
+      canPublishData: true,
+    });
+
+    return NextResponse.json({
+      serverUrl: LIVEKIT_URL,
+      roomName: roomName,
+      participantToken: await at.toJwt(),
+      participantName: 'user',
+    });
+  } catch (error: any) {
+    return new NextResponse(error.message, { status: 500 });
+  }
 }
