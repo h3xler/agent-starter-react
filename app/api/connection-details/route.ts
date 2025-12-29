@@ -9,34 +9,27 @@ type ConnectionDetails = {
   participantToken: string;
 };
 
-// NOTE: you are expected to define the following environment variables in `.env.local`:
 const API_KEY = process.env.LIVEKIT_API_KEY;
 const API_SECRET = process.env.LIVEKIT_API_SECRET;
 const LIVEKIT_URL = process.env.LIVEKIT_URL;
 
-// don't cache the results
 export const revalidate = 0;
 
 export async function POST(req: Request) {
   try {
-    if (LIVEKIT_URL === undefined) {
-      throw new Error('LIVEKIT_URL is not defined');
-    }
-    if (API_KEY === undefined) {
-      throw new Error('LIVEKIT_API_KEY is not defined');
-    }
-    if (API_SECRET === undefined) {
-      throw new Error('LIVEKIT_API_SECRET is not defined');
-    }
+    if (LIVEKIT_URL === undefined) throw new Error('LIVEKIT_URL is not defined');
+    if (API_KEY === undefined) throw new Error('LIVEKIT_API_KEY is not defined');
+    if (API_SECRET === undefined) throw new Error('LIVEKIT_API_SECRET is not defined');
 
-    // Parse agent configuration from request body
     const body = await req.json();
+    
+    // --- KRİTİK DEĞİŞİKLİK BURADA ---
+    // Eğer istekten bir roomName gelmişse onu kullan, yoksa rastgele üret.
+    const roomName = body.roomName || `voice_assistant_room_${Math.floor(Math.random() * 10_000)}`;
     const agentName: string = body?.room_config?.agents?.[0]?.agent_name;
 
-    // Generate participant token
     const participantName = 'user';
     const participantIdentity = `voice_assistant_user_${Math.floor(Math.random() * 10_000)}`;
-    const roomName = `voice_assistant_room_${Math.floor(Math.random() * 10_000)}`;
 
     const participantToken = await createParticipantToken(
       { identity: participantIdentity, name: participantName },
@@ -44,16 +37,14 @@ export async function POST(req: Request) {
       agentName
     );
 
-    // Return connection details
     const data: ConnectionDetails = {
       serverUrl: LIVEKIT_URL,
       roomName,
       participantToken: participantToken,
       participantName,
     };
-    const headers = new Headers({
-      'Cache-Control': 'no-store',
-    });
+    
+    const headers = new Headers({ 'Cache-Control': 'no-store' });
     return NextResponse.json(data, { headers });
   } catch (error) {
     if (error instanceof Error) {
