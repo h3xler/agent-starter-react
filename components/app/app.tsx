@@ -24,16 +24,24 @@ function AppSetup() {
   return null;
 }
 
+// Props'a roomName ekledik
 interface AppProps {
   appConfig: AppConfig;
+  roomName?: string; 
 }
 
-export function App({ appConfig }: AppProps) {
+export function App({ appConfig, roomName }: AppProps) {
   const tokenSource = useMemo(() => {
-    return typeof process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT === 'string'
-      ? getSandboxTokenSource(appConfig)
-      : TokenSource.endpoint('/api/connection-details');
-  }, [appConfig]);
+    if (typeof process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT === 'string') {
+      return getSandboxTokenSource(appConfig);
+    }
+    
+    // --- KRİTİK DEĞİŞİKLİK ---
+    // Backend'e oda ismini POST body içinde gönderiyoruz
+    return TokenSource.endpoint('/api/connection-details', {
+      body: JSON.stringify({ roomName }),
+    });
+  }, [appConfig, roomName]); // roomName değiştiğinde token kaynağını yenile
 
   const session = useSession(
     tokenSource,
