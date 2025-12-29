@@ -27,8 +27,8 @@ interface ViewControllerProps {
 export function ViewController({ appConfig }: ViewControllerProps) {
   const { isConnected, start } = useSessionContext();
   
-  # --- KRİTİK GÜNCELLEME: KATILIMCI TAKİBİ ---
-  # Odadaki diğer insanları (ve Agent'ı) listeler
+  // --- KRİTİK GÜNCELLEME: KATILIMCI TAKİBİ ---
+  // Odadaki diğer insanları (ve Agent'ı) listeler
   const participants = useRemoteParticipants();
 
   return (
@@ -43,11 +43,11 @@ export function ViewController({ appConfig }: ViewControllerProps) {
       )}
       {isConnected && (
         <div className="relative w-full h-full">
-          # Odadaki katılımcı sayısını gösteren küçük bir panel (BT Monitor için ideal)
+          {/* Odadaki katılımcı sayısını gösteren küçük bir panel (BT Monitor için ideal) */}
           <div className="fixed top-4 right-4 z-50 bg-black/50 p-2 rounded text-xs text-white">
             Aktif Katılımcılar: {participants.length + 1}
             <ul className="mt-1">
-              {participants.map(p => (
+              {participants.map((p) => (
                 <li key={p.identity} className="opacity-70">• {p.identity}</li>
               ))}
             </ul>
