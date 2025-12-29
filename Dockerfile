@@ -18,4 +18,6 @@ ENV NODE_ENV=production
 RUN npm run build
 
 EXPOSE 3000
-CMD ["npm", "run", "start"]
+# Build adımını devre dışı bırakıp doğrudan dev moduna geçiyoruz
+# RUN npm run build  <-- Bu satırı silin veya yorum yapın
+CMD ["npm", "run", "dev"]
