@@ -3,17 +3,13 @@
 import { useMemo } from 'react';
 import { TokenSource } from 'livekit-client';
 import { RoomAudioRenderer, SessionProvider, StartAudio, useSession } from '@livekit/components-react';
+import type { AppConfig } from '@/app-config';
 import { ViewController } from '@/components/app/view-controller';
 
-export function App({ appConfig, roomName }: { appConfig: any, roomName?: string }) {
+export function App({ appConfig }: { appConfig: AppConfig }) {
   const tokenSource = useMemo(() => {
-    // URL'ye parametre ekleyerek API'ye gönderiyoruz (En sağlam yöntem)
-    const endpoint = roomName 
-      ? `/api/connection-details?room=${roomName}` 
-      : '/api/connection-details';
-      
-    return TokenSource.endpoint(endpoint);
-  }, [roomName]);
+    return TokenSource.endpoint('/api/connection-details');
+  }, []);
 
   const session = useSession(tokenSource);
 
