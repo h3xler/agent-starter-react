@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { AccessToken, type AccessTokenOptions, type VideoGrant } from 'livekit-server-sdk';
+import { AccessToken } from 'livekit-server-sdk';
 
 const API_KEY = process.env.LIVEKIT_API_KEY;
 const API_SECRET = process.env.LIVEKIT_API_SECRET;
@@ -7,7 +7,7 @@ const LIVEKIT_URL = process.env.LIVEKIT_URL;
 
 export const revalidate = 0;
 
-export async function POST(req: Request) {
+export async function POST() {
   try {
     if (!LIVEKIT_URL || !API_KEY || !API_SECRET) {
       throw new Error('Environment variables are missing');
@@ -37,7 +37,6 @@ export async function POST(req: Request) {
       participantName: 'user',
     });
   } catch (error: any) {
-    console.error(error);
     return new NextResponse(error.message, { status: 500 });
   }
 }
