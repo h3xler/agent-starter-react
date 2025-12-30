@@ -3,14 +3,10 @@
 import { useMemo } from 'react';
 import { TokenSource } from 'livekit-client';
 import { RoomAudioRenderer, SessionProvider, StartAudio, useSession } from '@livekit/components-react';
-import type { AppConfig } from '@/app-config';
 import { ViewController } from '@/components/app/view-controller';
 
-export function App({ appConfig }: { appConfig: AppConfig }) {
-  const tokenSource = useMemo(() => {
-    return TokenSource.endpoint('/api/connection-details');
-  }, []);
-
+export function App({ appConfig }: { appConfig: any }) {
+  const tokenSource = useMemo(() => TokenSource.endpoint('/api/connection-details'), []);
   const session = useSession(tokenSource);
 
   return (
