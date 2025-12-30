@@ -9,17 +9,12 @@ export const revalidate = 0;
 
 export async function POST(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    // URL'den gelen ?room=... parametresini yakala
-    const roomFromQuery = searchParams.get('room');
-    
-    let body = {};
-    try { body = await req.json(); } catch (e) { /* body boş olabilir */ }
+    if (!LIVEKIT_URL || !API_KEY || !API_SECRET) {
+      throw new Error('Environment variables are missing');
+    }
 
-    // ÖNCE URL'deki odaya bak, yoksa body'deki odaya bak, o da yoksa rastgele üret
-    const roomName = roomFromQuery || (body as any)?.roomName || `voice_assistant_room_${Math.floor(Math.random() * 10_000)}`;
-    
     const participantIdentity = `user_${Math.floor(Math.random() * 10_000)}`;
+    const roomName = `voice_assistant_room_${Math.floor(Math.random() * 10_000)}`;
 
     const at = new AccessToken(API_KEY, API_SECRET, {
       identity: participantIdentity,
@@ -42,6 +37,7 @@ export async function POST(req: Request) {
       participantName: 'user',
     });
   } catch (error: any) {
+    console.error(error);
     return new NextResponse(error.message, { status: 500 });
   }
 }
