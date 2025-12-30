@@ -1,25 +1,43 @@
-COPY package*.json ./
-# Bağımlılık çakışmalarını önlemek için --force ekledik
+# 1. Aşama: Bağımlılıkları yükle
+FROM node:20-alpine AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
 
-# Sadece bağımlılıkları yükle (Build yapma!)
-RUN npm install --force
+# pnpm kullanıldığı için corepack aktif ediyoruz
+RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Tüm dosyaları kopyala
+COPY package.json pnpm-lock.yaml* ./
+RUN pnpm i --frozen-lockfile
+
+# 2. Aşama: Projeyi derle (Build)
+FROM node:20-alpine AS builder
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build sırasında hata çıksa bile imajın oluşmasını sağlayan kritik değişkenler
-ENV NEXT_TELEMETRY_DISABLED=1
+# KRİTİK: Next.js build sırasında bu değişkenlerin tanımlı olması gerekir
+ARG NEXT_PUBLIC_LIVEKIT_URL
+ENV NEXT_PUBLIC_LIVEKIT_URL=${NEXT_PUBLIC_LIVEKIT_URL}
+
+# Projeyi derle
+RUN pnpm run build
+
+# 3. Aşama: Çalışma ortamı (Runner)
+FROM node:20-alpine AS runner
+WORKDIR /app
+
 ENV NODE_ENV=production
 
-# Eğer build hala hata veriyorsa, 'npm run build' yerine 
-# doğrudan geliştirme modunda çalıştırmayı deneyebiliriz.
-RUN npm run build
-# Build adımını tamamen sildik/yorum yaptık. 
-# Böylece build hatası alma ihtimalimiz kalmadı.
+# Sadece gerekli dosyaları kopyalayarak imaj boyutunu küçültüyoruz
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./package.json
 
 EXPOSE 3000
-# Build adımını devre dışı bırakıp doğrudan dev moduna geçiyoruz
-# RUN npm run build  <-- Bu satırı silin veya yorum yapın
 
-# Projeyi build etmeden, doğrudan geliştirme modunda (runtime'da) başlat
-CMD ["npm", "run", "dev"]
+# Uygulamayı başlat
+CMD ["npm", "start"]
