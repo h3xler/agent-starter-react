@@ -9,17 +9,12 @@ export const revalidate = 0;
 
 export async function POST() {
   try {
-    if (!LIVEKIT_URL || !API_KEY || !API_SECRET) {
-      throw new Error('Environment variables are missing');
-    }
-
     const participantIdentity = `user_${Math.floor(Math.random() * 10_000)}`;
     const roomName = `voice_assistant_room_${Math.floor(Math.random() * 10_000)}`;
 
     const at = new AccessToken(API_KEY, API_SECRET, {
       identity: participantIdentity,
       name: 'user',
-      ttl: '15m',
     });
 
     at.addGrant({
